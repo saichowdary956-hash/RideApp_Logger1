@@ -1,0 +1,1038 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataLogger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.8em;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
+            50% { box-shadow: 0 8px 35px rgba(118, 75, 162, 0.6); }
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-top: 4px solid transparent;
+            background-image: linear-gradient(white, white), 
+                              linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+        }
+
+        .session-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .session-details input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .session-details input::placeholder {
+            color: #f39c12;
+            opacity: 1;
+        }
+
+        .session-details input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .conditions-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .conditions-table thead {
+            background: #3a3a3a;
+        }
+        
+        .conditions-table th {
+            color: white;
+            font-weight: 600;
+            font-size: 10px;
+            padding: 8px 6px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+        
+        .conditions-table tbody tr {
+            border-bottom: 1px solid #333;
+        }
+        
+        .conditions-table tbody tr:last-child {
+            border-bottom: none;
+        }
+        
+        .conditions-table td {
+            padding: 6px 6px;
+            color: white;
+            font-size: 10px;
+        }
+        
+        .category-label {
+            color: #ff6b6b;
+            font-weight: 600;
+            font-size: 10px;
+        }
+        
+        .category-spacer {
+            height: 0px;
+            background: transparent;
+        }
+        
+        .condition-btn {
+            background: #51cf66;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            min-width: 70px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .condition-btn:hover {
+            background: #40c057;
+            transform: scale(1.02);
+        }
+        
+        .condition-btn.active {
+            background: #ff6b6b;
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.5);
+            animation: pulse 2s infinite;
+        }
+        
+        .condition-time {
+            font-size: 10px;
+            font-weight: 500;
+            color: white;
+            text-align: center;
+            min-width: 60px;
+        }
+        
+        .condition-status {
+            display: none;
+        }
+
+        .reset-btn {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .reset-btn:hover {
+            background: #f57c00;
+            transform: translateY(-2px);
+        }
+        
+        /* Confirmation Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            min-width: 300px;
+            animation: slideDown 0.3s;
+        }
+        
+        .modal-content h3 {
+            color: #333;
+            margin-bottom: 18px;
+            font-size: 18px;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+        
+        .modal-btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .modal-btn-yes {
+            background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(81, 207, 102, 0.3);
+        }
+        
+        .modal-btn-yes:hover {
+            background: linear-gradient(135deg, #40c057 0%, #2f9e44 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(81, 207, 102, 0.4);
+        }
+        
+        .modal-btn-cancel {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+        }
+        
+        .modal-btn-cancel:hover {
+            background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f5f5f5;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .btn-start {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 10px;
+            transition: all 0.3s;
+        }
+
+        .btn-start:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-start.active {
+            background: #f44336;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .status-active {
+            color: #f44336;
+            font-weight: bold;
+        }
+
+        .status-stopped {
+            color: #666;
+        }
+
+        .comments-box {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 3px solid transparent;
+            background: linear-gradient(white, white) padding-box,
+                        linear-gradient(135deg, #667eea 0%, #764ba2 100%) border-box;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            transition: all 0.3s;
+        }
+
+        .comments-box:focus {
+            outline: none;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        .btn-stop-all {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-stop-all:hover {
+            background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+            box-shadow: 0 4px 15px rgba(81, 207, 102, 0.4);
+        }
+
+        .btn-export:hover {
+            background: linear-gradient(135deg, #40c057 0%, #2f9e44 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(81, 207, 102, 0.5);
+        }
+
+        .alert {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .alert.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffc107;
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+                padding: 15px;
+            }
+            
+            .card {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+            
+            .session-details {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .input-group input {
+                font-size: 16px;
+                padding: 12px;
+            }
+            
+            .conditions-table th {
+                font-size: 14px;
+                padding: 12px 8px;
+            }
+            
+            .conditions-table td {
+                padding: 10px 8px;
+                font-size: 14px;
+            }
+            
+            .category-label {
+                font-size: 14px;
+            }
+            
+            .condition-btn {
+                font-size: 15px;
+                padding: 10px 16px;
+                min-width: 90px;
+            }
+            
+            .condition-time {
+                font-size: 15px;
+                min-width: 85px;
+            }
+            
+            .comments-box {
+                font-size: 16px;
+                min-height: 120px;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-btn {
+                padding: 16px;
+                font-size: 16px;
+            }
+            
+            .modal-content {
+                margin: 0 15px;
+                min-width: auto;
+                max-width: 90%;
+            }
+            
+            .reset-btn {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3 id="confirmMessage">Are you sure?</h3>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-yes" onclick="confirmYes()">Yes</button>
+                <button class="modal-btn modal-btn-cancel" onclick="confirmCancel()">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h1>🚗 DataLogger</h1>
+
+        <div class="alert" id="alert"></div>
+
+        <!-- Session Details -->
+        <div class="card">
+            <h2 style="margin-bottom: 15px; color: #333; font-size: 1.3em;">Session Details</h2>
+            <div class="session-details">
+                <input type="text" id="driver" placeholder="Driver">
+                <input type="text" id="annotator" placeholder="Annotator">
+                <input type="date" id="date">
+                <input type="text" id="vehicle" placeholder="Vehicle">
+                <input type="text" id="rsuNo" placeholder="RSU No">
+                <input type="text" id="driveId" placeholder="Drive ID">
+                <input type="number" id="rsuStorage" placeholder="RSU Storage %" min="0" max="100">
+            </div>
+        </div>
+
+        <!-- Recording Conditions -->
+        <div class="card">
+            <h2 style="margin-bottom: 15px; color: #333; font-size: 1.3em;">Recording Conditions</h2>
+            <div id="conditions-container"></div>
+        </div>
+
+        <!-- Comments -->
+        <div class="card">
+            <h3 style="margin-bottom: 15px; color: #333;">Comments</h3>
+            <textarea class="comments-box" id="comments" placeholder="Enter comments here..."></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="action-btn btn-stop-all" onclick="stopAll()">⏹️ Stop All</button>
+            <button class="action-btn btn-export" onclick="exportCSV()">📥 Export CSV</button>
+        </div>
+    </div>
+
+    <script>
+        const categories = {
+            'Weather': ['Sunny', 'Low Sun', 'Cloudy', 'Rain', 'Fog', 'Snow'],
+            'Roadtype': ['City', 'Country', 'Highway', 'Construction site', 'Tunnel'],
+            'Lighting': ['Day', 'Dawn', 'Lit Night', 'Dark Night'],
+            'Traffic': ['Flow', 'Jam'],
+            'Speed': ['3-18mph', '19-37mph', '38-55mph', '56-80mph', '81-155mph']
+        };
+
+        let conditionData = {};
+        let activeConditions = {}; // Track active condition per category
+        let startTimes = {}; // Track start time per category
+        let timerInterval = null;
+        let lastNotificationMinute = 0; // Track last notification time
+        let recordingSessions = {}; // Track individual recording sessions
+        let sessionCounter = 1; // Counter for session numbers
+        
+        // Session time tracking
+        let sessionStartTime = null;
+        let sessionEndTime = null;
+        let isSessionActive = false;
+        let hasShown30MinNotification = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeData();
+            renderConditions();
+            loadData();
+            document.getElementById('date').valueAsDate = new Date();
+        });
+
+        function initializeData() {
+            Object.keys(categories).forEach(category => {
+                categories[category].forEach(condition => {
+                    const key = `${category}|${condition}`;
+                    conditionData[key] = { time: 0, status: 'Stopped' };
+                });
+            });
+        }
+
+        function renderConditions() {
+            const container = document.getElementById('conditions-container');
+            
+            let tableHTML = `
+                <table class="conditions-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Condition</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            Object.keys(categories).forEach((category, categoryIndex) => {
+                // Add category header row with reset button
+                tableHTML += `
+                    <tr class="category-header-row">
+                        <td colspan="3" style="background: #3a3a3a; padding: 12px;">
+                            <span style="color: #ff6b6b; font-weight: 600; font-size: 15px;">${category}</span>
+                        </td>
+                        <td style="background: #3a3a3a; padding: 12px; text-align: right;">
+                            <button class="reset-btn" onclick="resetCategory('${category}')">🔄 Reset</button>
+                        </td>
+                    </tr>
+                `;
+                
+                categories[category].forEach((condition, index) => {
+                    const key = `${category}|${condition}`;
+                    const data = conditionData[key];
+                    const timeStr = formatTime(data.time);
+                    const isActive = activeConditions[category] === condition;
+                    
+                    tableHTML += `
+                        <tr>
+                            <td></td>
+                            <td>
+                                <button class="condition-btn ${isActive ? 'active' : ''}" 
+                                        onclick="toggleCondition('${category}', '${condition}')">
+                                    ${condition}
+                                </button>
+                            </td>
+                            <td class="condition-time" id="time-${category}-${condition}">${timeStr}</td>
+                            <td style="display: none;" class="condition-status ${isActive ? 'status-active' : 'status-stopped'}" 
+                                 id="status-${category}-${condition}">
+                                ${isActive ? '● Recording' : data.status}
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                // Add spacing between categories
+                if (categoryIndex < Object.keys(categories).length - 1) {
+                    tableHTML += `<tr class="category-spacer"><td colspan="4"></td></tr>`;
+                }
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
+        }
+
+        function toggleCondition(category, condition) {
+            const isCurrentActive = activeConditions[category] === condition;
+            
+            if (isCurrentActive) {
+                stopRecording(category);
+            } else {
+                // Stop any other condition in this category
+                if (activeConditions[category]) {
+                    stopRecording(category);
+                }
+                startRecording(category, condition);
+            }
+        }
+
+        function startRecording(category, condition) {
+            // Start session time if first recording
+            if (!isSessionActive) {
+                sessionStartTime = Date.now();
+                sessionEndTime = null;
+                isSessionActive = true;
+                hasShown30MinNotification = false;
+            }
+            
+            activeConditions[category] = condition;
+            startTimes[category] = Date.now();
+            
+            const key = `${category}|${condition}`;
+            conditionData[key].status = 'Recording';
+            
+            if (!timerInterval) {
+                timerInterval = setInterval(updateTimer, 1000);
+            }
+            renderConditions();
+        }
+
+        function stopRecording(category) {
+            const condition = activeConditions[category];
+            if (!condition) return;
+            
+            const key = `${category}|${condition}`;
+            const elapsed = Math.floor((Date.now() - startTimes[category]) / 1000);
+            conditionData[key].time += elapsed;
+            conditionData[key].status = 'Stopped';
+            
+            // Save this recording session
+            if (!recordingSessions[category]) {
+                recordingSessions[category] = [];
+            }
+            recordingSessions[category].push({
+                condition: condition,
+                duration: elapsed,
+                sessionNumber: sessionCounter
+            });
+            
+            delete activeConditions[category];
+            delete startTimes[category];
+            
+            // Stop timer if no active conditions
+            if (Object.keys(activeConditions).length === 0) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                sessionCounter++; // Increment session counter when all recordings stop
+            }
+            
+            renderConditions();
+            saveData();
+        }
+
+        function updateTimer() {
+            Object.keys(activeConditions).forEach(category => {
+                const condition = activeConditions[category];
+                const key = `${category}|${condition}`;
+                const elapsed = Math.floor((Date.now() - startTimes[category]) / 1000);
+                const totalTime = conditionData[key].time + elapsed;
+                
+                const timeElement = document.getElementById(`time-${category}-${condition}`);
+                if (timeElement) {
+                    timeElement.textContent = formatTime(totalTime);
+                }
+            });
+            
+            // Check for 30-minute session notification
+            checkSessionTimeNotification();
+        }
+        
+        function checkSessionTimeNotification() {
+            if (!isSessionActive || !sessionStartTime) return;
+            
+            const sessionSeconds = Math.floor((Date.now() - sessionStartTime) / 1000);
+            const sessionMinutes = Math.floor(sessionSeconds / 60);
+            
+            // Show notification at 30 minutes
+            if (sessionMinutes >= 30 && !hasShown30MinNotification) {
+                hasShown30MinNotification = true;
+                showTimeAlert(`⏰ Session Time: ${sessionMinutes} Minutes Reached!`, 'warning');
+            }
+        }
+
+        function playNotificationSound() {
+            // Create a beep sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        function showTimeAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert ${type}`;
+            alert.style.display = 'block';
+            alert.style.position = 'fixed';
+            alert.style.top = '20px';
+            alert.style.left = '50%';
+            alert.style.transform = 'translateX(-50%)';
+            alert.style.zIndex = '9999';
+            alert.style.fontSize = '18px';
+            alert.style.fontWeight = 'bold';
+            alert.style.animation = 'pulse 1s infinite';
+            
+            // Keep it visible until user dismisses or clicks anywhere
+            setTimeout(() => {
+                alert.onclick = () => {
+                    alert.style.display = 'none';
+                    alert.style.position = 'static';
+                    alert.style.transform = 'none';
+                    alert.style.animation = 'none';
+                    alert.onclick = null;
+                };
+            }, 100);
+        }
+
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function resetCategory(category) {
+            showConfirmation(
+                `Are you sure you want to reset ${category}?`,
+                () => {
+                    if (activeConditions[category]) {
+                        stopRecording(category);
+                    }
+                    
+                    categories[category].forEach(condition => {
+                        const key = `${category}|${condition}`;
+                        conditionData[key].time = 0;
+                        conditionData[key].status = 'Stopped';
+                    });
+                    
+                    // Clear recording sessions for this category
+                    if (recordingSessions[category]) {
+                        recordingSessions[category] = [];
+                    }
+                    
+                    renderConditions();
+                    saveData();
+                    showAlert(`${category} reset successfully`, 'success');
+                }
+            );
+        }
+        
+        function showConfirmation(message, onConfirm) {
+            const modal = document.getElementById('confirmModal');
+            const messageEl = document.getElementById('confirmMessage');
+            messageEl.textContent = message;
+            modal.classList.add('show');
+            
+            // Store the callback
+            window.confirmCallback = onConfirm;
+        }
+        
+        function confirmYes() {
+            const modal = document.getElementById('confirmModal');
+            modal.classList.remove('show');
+            if (window.confirmCallback) {
+                window.confirmCallback();
+                window.confirmCallback = null;
+            }
+        }
+        
+        function confirmCancel() {
+            const modal = document.getElementById('confirmModal');
+            modal.classList.remove('show');
+            window.confirmCallback = null;
+        }
+
+        function stopAll() {
+            Object.keys(activeConditions).forEach(category => {
+                stopRecording(category);
+            });
+            
+            // Stop session recording and capture end time
+            if (isSessionActive && sessionStartTime) {
+                sessionEndTime = Date.now();
+                isSessionActive = false;
+            }
+            
+            showAlert('All recording stopped', 'info');
+        }
+
+        function exportCSV() {
+            const driver = document.getElementById('driver').value;
+            const annotator = document.getElementById('annotator').value;
+            const vehicle = document.getElementById('vehicle').value;
+            const rsuNo = document.getElementById('rsuNo').value;
+            const driveId = document.getElementById('driveId').value;
+            const date = document.getElementById('date').value;
+            const comments = document.getElementById('comments').value;
+            const rsuStorage = document.getElementById('rsuStorage').value;
+
+            // Calculate overall session time
+            let totalSessionSeconds = 0;
+            if (sessionStartTime) {
+                const endTime = sessionEndTime || (isSessionActive ? Date.now() : sessionStartTime);
+                totalSessionSeconds = Math.floor((endTime - sessionStartTime) / 1000);
+            }
+
+            let csv = 'DataLogger Report\n';
+            csv += `Driver,${driver}\n`;
+            csv += `Annotator,${annotator}\n`;
+            csv += `Date,${date}\n`;
+            csv += `Vehicle,${vehicle}\n`;
+            csv += `RSU No,${rsuNo}\n`;
+            csv += `RSU Storage,${rsuStorage}%\n`;
+            csv += `Drive ID,${driveId}\n`;
+            csv += `Overall Session Time,${formatTime(totalSessionSeconds)}\n`;
+            csv += `Comments,"${comments.replace(/"/g, '""')}"\n\n`;
+            
+            // Horizontal format with all categories and ALL conditions
+            csv += 'Category';
+            Object.keys(categories).forEach(category => {
+                csv += `,${category},,`; // Category name with spacing
+            });
+            csv += '\n';
+            
+            // Find max number of conditions across all categories
+            let maxConditions = 0;
+            Object.keys(categories).forEach(category => {
+                maxConditions = Math.max(maxConditions, categories[category].length);
+            });
+            
+            // Create rows for each condition index
+            for (let i = 0; i < maxConditions; i++) {
+                csv += ''; // Empty first column
+                
+                Object.keys(categories).forEach(category => {
+                    const condition = categories[category][i];
+                    
+                    if (condition) {
+                        // Check if this condition was recorded
+                        const sessions = recordingSessions[category] || [];
+                        const recorded = sessions.find(s => s.condition === condition);
+                        
+                        if (recorded && recorded.duration > 0) {
+                            csv += `,${condition},${formatTime(recorded.duration)},`;
+                        } else {
+                            csv += `,${condition},00:00:00,`;
+                        }
+                    } else {
+                        csv += ',,,'; // Empty cells if category has fewer conditions
+                    }
+                });
+                csv += '\n';
+            }
+
+            const filename = `DataLogger_${date}_${Date.now()}.csv`;
+            downloadCSV(csv, filename);
+            showAlert('CSV exported successfully!', 'success');
+        }
+
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert ${type}`;
+            alert.style.display = 'block';
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        }
+
+        function saveData() {
+            const data = {
+                driver: document.getElementById('driver').value,
+                annotator: document.getElementById('annotator').value,
+                vehicle: document.getElementById('vehicle').value,
+                rsuNo: document.getElementById('rsuNo').value,
+                driveId: document.getElementById('driveId').value,
+                date: document.getElementById('date').value,
+                comments: document.getElementById('comments').value,
+                rsuStorage: document.getElementById('rsuStorage').value,
+                conditionData: conditionData,
+                recordingSessions: recordingSessions,
+                sessionCounter: sessionCounter,
+                sessionStartTime: sessionStartTime,
+                sessionEndTime: sessionEndTime,
+                isSessionActive: isSessionActive
+            };
+            localStorage.setItem('dataLoggerData', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const stored = localStorage.getItem('dataLoggerData');
+            if (stored) {
+                const data = JSON.parse(stored);
+                document.getElementById('driver').value = data.driver || '';
+                document.getElementById('annotator').value = data.annotator || '';
+                document.getElementById('vehicle').value = data.vehicle || '';
+                document.getElementById('rsuNo').value = data.rsuNo || '';
+                document.getElementById('driveId').value = data.driveId || '';
+                document.getElementById('date').value = data.date || new Date().toISOString().split('T')[0];
+                document.getElementById('comments').value = data.comments || '';
+                document.getElementById('rsuStorage').value = data.rsuStorage || '';
+                
+                if (data.conditionData) {
+                    conditionData = data.conditionData;
+                    renderConditions();
+                }
+                if (data.recordingSessions) {
+                    recordingSessions = data.recordingSessions;
+                }
+                if (data.sessionCounter) {
+                    sessionCounter = data.sessionCounter;
+                }
+                if (data.sessionStartTime) {
+                    sessionStartTime = data.sessionStartTime;
+                }
+                if (data.sessionEndTime) {
+                    sessionEndTime = data.sessionEndTime;
+                }
+                if (data.isSessionActive !== undefined) {
+                    isSessionActive = data.isSessionActive;
+                }
+            }
+        }
+
+        // Auto-save on input change
+        ['driver', 'annotator', 'vehicle', 'rsuNo', 'driveId', 'date', 'comments', 'rsuStorage'].forEach(id => {
+            document.getElementById(id).addEventListener('change', saveData);
+        });
+        document.getElementById('comments').addEventListener('input', saveData);
+        
+        // Auto-export CSV before page unload/refresh to prevent data loss
+        window.addEventListener('beforeunload', function(e) {
+            // Check if there's any recorded data
+            let hasData = false;
+            Object.keys(conditionData).forEach(key => {
+                if (conditionData[key].time > 0) {
+                    hasData = true;
+                }
+            });
+            
+            // Also check for active recordings
+            const hasActiveRecordings = Object.keys(activeConditions).length > 0;
+            
+            if (hasData || hasActiveRecordings) {
+                // Auto-export CSV before leaving
+                exportCSV();
+                
+                // Show warning message
+                const message = 'Your data has been auto-saved as CSV. Do you really want to leave?';
+                e.preventDefault();
+                e.returnValue = message;
+                return message;
+            }
+        });
+    </script>
+</body>
+</html>
