@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -543,19 +543,20 @@
         };
 
         let conditionData = {};
-        let activeConditions = {};
-        let startTimes = {};
+        let activeConditions = {}; // Track active condition per category
+        let startTimes = {}; // Track start time per category
         let timerInterval = null;
-        let lastNotificationMinute = 0;
-        let recordingSessions = {};
-        let sessionCounter = 1;
+        let lastNotificationMinute = 0; // Track last notification time
+        let recordingSessions = {}; // Track individual recording sessions
+        let sessionCounter = 1; // Counter for session numbers
         
-        // BACKGROUND: Session time tracking
+        // Session time tracking - runs in background
         let sessionStartTime = null;
         let sessionEndTime = null;
         let isSessionActive = false;
         let hasShown30MinNotification = false;
 
+        // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             initializeData();
             renderConditions();
@@ -589,6 +590,7 @@
             `;
 
             Object.keys(categories).forEach((category, categoryIndex) => {
+                // Add category header row with reset button
                 tableHTML += `
                     <tr class="category-header-row">
                         <td colspan="3" style="background: #3a3a3a; padding: 12px;">
@@ -624,6 +626,7 @@
                     `;
                 });
                 
+                // Add spacing between categories
                 if (categoryIndex < Object.keys(categories).length - 1) {
                     tableHTML += `<tr class="category-spacer"><td colspan="4"></td></tr>`;
                 }
@@ -643,6 +646,7 @@
             if (isCurrentActive) {
                 stopRecording(category);
             } else {
+                // Stop any other condition in this category
                 if (activeConditions[category]) {
                     stopRecording(category);
                 }
@@ -651,13 +655,13 @@
         }
 
         function startRecording(category, condition) {
-            // BACKGROUND: Capture session start time
+            // BACKGROUND: Start session time if first recording
             if (!isSessionActive) {
                 sessionStartTime = Date.now();
                 sessionEndTime = null;
                 isSessionActive = true;
                 hasShown30MinNotification = false;
-                saveData();
+                saveData(); // Auto-save session start time
             }
             
             activeConditions[category] = condition;
@@ -681,6 +685,7 @@
             conditionData[key].time += elapsed;
             conditionData[key].status = 'Stopped';
             
+            // Save this recording session
             if (!recordingSessions[category]) {
                 recordingSessions[category] = [];
             }
@@ -693,16 +698,17 @@
             delete activeConditions[category];
             delete startTimes[category];
             
-            // BACKGROUND: Capture session end time
+            // BACKGROUND: Stop timer and update session end time if no active conditions
             if (Object.keys(activeConditions).length === 0) {
                 clearInterval(timerInterval);
                 timerInterval = null;
-                sessionCounter++;
+                sessionCounter++; // Increment session counter when all recordings stop
                 
+                // Update session end time in background
                 if (isSessionActive) {
                     sessionEndTime = Date.now();
                     isSessionActive = false;
-                    saveData();
+                    saveData(); // Auto-save session end time
                 }
             }
             
@@ -723,8 +729,10 @@
                 }
             });
             
+            // Check for 30-minute session notification
             checkSessionTimeNotification();
             
+            // BACKGROUND: Auto-save session data every 5 seconds while recording
             if (isSessionActive && Date.now() % 5000 < 1000) {
                 saveData();
             }
@@ -736,10 +744,30 @@
             const sessionSeconds = Math.floor((Date.now() - sessionStartTime) / 1000);
             const sessionMinutes = Math.floor(sessionSeconds / 60);
             
+            // Show notification at 30 minutes
             if (sessionMinutes >= 30 && !hasShown30MinNotification) {
                 hasShown30MinNotification = true;
                 showTimeAlert(`⏰ Session Time: ${sessionMinutes} Minutes Reached!`, 'warning');
             }
+        }
+
+        function playNotificationSound() {
+            // Create a beep sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
         }
 
         function showTimeAlert(message, type) {
@@ -756,6 +784,7 @@
             alert.style.fontWeight = 'bold';
             alert.style.animation = 'pulse 1s infinite';
             
+            // Keep it visible until user dismisses or clicks anywhere
             setTimeout(() => {
                 alert.onclick = () => {
                     alert.style.display = 'none';
@@ -774,7 +803,7 @@
             return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
         }
         
-        // BACKGROUND: Format timestamps for CSV
+        // BACKGROUND: Helper function to format timestamps
         function formatTimestamp(timestamp) {
             if (!timestamp) return 'N/A';
             
@@ -803,6 +832,7 @@
                         conditionData[key].status = 'Stopped';
                     });
                     
+                    // Clear recording sessions for this category
                     if (recordingSessions[category]) {
                         recordingSessions[category] = [];
                     }
@@ -819,6 +849,8 @@
             const messageEl = document.getElementById('confirmMessage');
             messageEl.textContent = message;
             modal.classList.add('show');
+            
+            // Store the callback
             window.confirmCallback = onConfirm;
         }
         
@@ -842,11 +874,11 @@
                 stopRecording(category);
             });
             
-            // BACKGROUND: Capture end time
+            // BACKGROUND: Stop session recording and capture end time
             if (isSessionActive && sessionStartTime) {
                 sessionEndTime = Date.now();
                 isSessionActive = false;
-                saveData();
+                saveData(); // Auto-save session end time
             }
             
             showAlert('All recording stopped', 'info');
@@ -862,18 +894,21 @@
             const comments = document.getElementById('comments').value;
             const rsuStorage = document.getElementById('rsuStorage').value;
 
-            // BACKGROUND: Calculate session times
+            // BACKGROUND: Calculate overall session time from tracked timestamps
             let totalSessionSeconds = 0;
             let sessionStartTimeFormatted = 'N/A';
             let sessionEndTimeFormatted = 'N/A';
             
             if (sessionStartTime) {
+                // Use current time if session is still active, otherwise use recorded end time
                 const endTime = isSessionActive ? Date.now() : (sessionEndTime || sessionStartTime);
                 totalSessionSeconds = Math.floor((endTime - sessionStartTime) / 1000);
                 
+                // Format timestamps for CSV display
                 sessionStartTimeFormatted = formatTimestamp(sessionStartTime);
                 sessionEndTimeFormatted = formatTimestamp(endTime);
                 
+                // Update end time if session is currently active
                 if (isSessionActive) {
                     sessionEndTime = endTime;
                 }
@@ -892,24 +927,28 @@
             csv += `Overall Session Time,${formatTime(totalSessionSeconds)}\n`;
             csv += `Comments,"${comments.replace(/"/g, '""')}"\n\n`;
             
+            // Horizontal format with all categories and ALL conditions
             csv += 'Category';
             Object.keys(categories).forEach(category => {
-                csv += `,${category},,`;
+                csv += `,${category},,`; // Category name with spacing
             });
             csv += '\n';
             
+            // Find max number of conditions across all categories
             let maxConditions = 0;
             Object.keys(categories).forEach(category => {
                 maxConditions = Math.max(maxConditions, categories[category].length);
             });
             
+            // Create rows for each condition index
             for (let i = 0; i < maxConditions; i++) {
-                csv += '';
+                csv += ''; // Empty first column
                 
                 Object.keys(categories).forEach(category => {
                     const condition = categories[category][i];
                     
                     if (condition) {
+                        // Check if this condition was recorded
                         const sessions = recordingSessions[category] || [];
                         const recorded = sessions.find(s => s.condition === condition);
                         
@@ -919,7 +958,7 @@
                             csv += `,${condition},00:00:00,`;
                         }
                     } else {
-                        csv += ',,,'; 
+                        csv += ',,,'; // Empty cells if category has fewer conditions
                     }
                 });
                 csv += '\n';
@@ -927,7 +966,7 @@
 
             const filename = `DataLogger_${date}_${Date.now()}.csv`;
             downloadCSV(csv, filename);
-            saveData();
+            saveData(); // Save updated session data
             showAlert('CSV exported successfully!', 'success');
         }
 
@@ -1008,9 +1047,35 @@
             }
         }
 
-        document.querySelectorAll('input, textarea').forEach(element => {
-            element.addEventListener('change', saveData);
-            element.addEventListener('input', saveData);
+        // Auto-save on input change
+        ['driver', 'annotator', 'vehicle', 'rsuNo', 'driveId', 'date', 'comments', 'rsuStorage'].forEach(id => {
+            document.getElementById(id).addEventListener('change', saveData);
+        });
+        document.getElementById('comments').addEventListener('input', saveData);
+        
+        // Auto-export CSV before page unload/refresh to prevent data loss
+        window.addEventListener('beforeunload', function(e) {
+            // Check if there's any recorded data
+            let hasData = false;
+            Object.keys(conditionData).forEach(key => {
+                if (conditionData[key].time > 0) {
+                    hasData = true;
+                }
+            });
+            
+            // Also check for active recordings
+            const hasActiveRecordings = Object.keys(activeConditions).length > 0;
+            
+            if (hasData || hasActiveRecordings) {
+                // Auto-export CSV before leaving
+                exportCSV();
+                
+                // Show warning message
+                const message = 'Your data has been auto-saved as CSV. Do you really want to leave?';
+                e.preventDefault();
+                e.returnValue = message;
+                return message;
+            }
         });
     </script>
 </body>
