@@ -919,7 +919,7 @@
                             csv += `,${condition},00:00:00,`;
                         }
                     } else {
-                        csv += ',,,';
+                        csv += ',,,'; 
                     }
                 });
                 csv += '\n';
@@ -1008,29 +1008,9 @@
             }
         }
 
-        ['driver', 'annotator', 'vehicle', 'rsuNo', 'driveId', 'date', 'comments', 'rsuStorage'].forEach(id => {
-            document.getElementById(id).addEventListener('change', saveData);
-        });
-        document.getElementById('comments').addEventListener('input', saveData);
-        
-        window.addEventListener('beforeunload', function(e) {
-            let hasData = false;
-            Object.keys(conditionData).forEach(key => {
-                if (conditionData[key].time > 0) {
-                    hasData = true;
-                }
-            });
-            
-            const hasActiveRecordings = Object.keys(activeConditions).length > 0;
-            
-            if (hasData || hasActiveRecordings) {
-                exportCSV();
-                
-                const message = 'Your data has been auto-saved as CSV. Do you really want to leave?';
-                e.preventDefault();
-                e.returnValue = message;
-                return message;
-            }
+        document.querySelectorAll('input, textarea').forEach(element => {
+            element.addEventListener('change', saveData);
+            element.addEventListener('input', saveData);
         });
     </script>
 </body>
