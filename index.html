@@ -514,6 +514,21 @@
             </div>
         </div>
 
+        <!-- Session Timestamps -->
+        <div class="card">
+            <h2 style="margin-bottom: 15px; color: #333; font-size: 1.3em;">⏱️ Session Timestamps</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                <div style="padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                    <div style="color: #fff; font-size: 12px; font-weight: 600; margin-bottom: 5px;">START TIME</div>
+                    <div id="sessionStartDisplay" style="color: #fff; font-size: 16px; font-weight: 700;">Not started</div>
+                </div>
+                <div style="padding: 12px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);">
+                    <div style="color: #fff; font-size: 12px; font-weight: 600; margin-bottom: 5px;">END TIME</div>
+                    <div id="sessionEndDisplay" style="color: #fff; font-size: 16px; font-weight: 700;">Not ended</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Recording Conditions -->
         <div class="card">
             <h2 style="margin-bottom: 15px; color: #333; font-size: 1.3em;">Recording Conditions</h2>
@@ -661,6 +676,7 @@
                 sessionEndTime = null;
                 isSessionActive = true;
                 hasShown30MinNotification = false;
+                updateTimestampDisplay(); // Update UI display
                 saveData(); // Auto-save session start time
             }
             
@@ -708,6 +724,7 @@
                 if (isSessionActive) {
                     sessionEndTime = Date.now();
                     isSessionActive = false;
+                    updateTimestampDisplay(); // Update UI display
                     saveData(); // Auto-save session end time
                 }
             }
@@ -818,6 +835,27 @@
             return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
         }
 
+        // Update timestamp display in the UI
+        function updateTimestampDisplay() {
+            const startDisplay = document.getElementById('sessionStartDisplay');
+            const endDisplay = document.getElementById('sessionEndDisplay');
+            
+            if (startDisplay) {
+                startDisplay.textContent = sessionStartTime ? formatTimestamp(sessionStartTime) : 'Not started';
+            }
+            
+            if (endDisplay) {
+                // Show current time if session is active, otherwise show recorded end time
+                if (isSessionActive && sessionStartTime) {
+                    endDisplay.textContent = 'In progress...';
+                } else if (sessionEndTime) {
+                    endDisplay.textContent = formatTimestamp(sessionEndTime);
+                } else {
+                    endDisplay.textContent = 'Not ended';
+                }
+            }
+        }
+
         function resetCategory(category) {
             showConfirmation(
                 `Are you sure you want to reset ${category}?`,
@@ -878,6 +916,7 @@
             if (isSessionActive && sessionStartTime) {
                 sessionEndTime = Date.now();
                 isSessionActive = false;
+                updateTimestampDisplay(); // Update UI display
                 saveData(); // Auto-save session end time
             }
             
@@ -1044,6 +1083,9 @@
                 if (data.isSessionActive !== undefined) {
                     isSessionActive = data.isSessionActive;
                 }
+                
+                // Update timestamp display after loading
+                updateTimestampDisplay();
             }
         }
 
