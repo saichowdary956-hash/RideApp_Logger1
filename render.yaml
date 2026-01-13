@@ -1,10 +1,10 @@
 services:
   - type: web
     name: rideapp-logger1
-    env: static
-    buildCommand: ""
-    staticPublishPath: .
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /dataloggers.html
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
