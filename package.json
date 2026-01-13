@@ -19,8 +19,5 @@
   },
   "engines": {
     "node": ">=14.0.0"
-  },
-  "devDependencies": {
-    "eslint": "^9.39.2"
   }
 }
