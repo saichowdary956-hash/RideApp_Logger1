@@ -12,6 +12,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Enhanced datalogger route
+app.get('/datalogger', (req, res) => {
+    res.sendFile(path.join(__dirname, 'datalogger.html'));
+});
+
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'Server is running' });
