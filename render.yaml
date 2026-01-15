@@ -1,13 +1,7 @@
 services:
   - type: web
-    name: rideapp-logger
-    env: static
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
-    routes:
-      - type: rewrite
-        source: /
-        destination: /index.html
-      - type: rewrite
-        source: /datalogger.html
-        destination: /datalogger.html
+    name: rideapp-logger1
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
