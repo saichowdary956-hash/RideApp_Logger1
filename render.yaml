@@ -7,4 +7,8 @@ services:
     routes:
       - type: rewrite
         source: /*
+<<<<<<< HEAD
         destination: /index.html
+=======
+        destination: /rideLogger.html
+>>>>>>> 3d3f03880da66ec27c47517c5072a9550bc93e67
