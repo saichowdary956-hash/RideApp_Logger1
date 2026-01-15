@@ -1,18 +1,19 @@
 const express = require('express');
 const path = require('path');
+
 const app = express();
 
 // Serve static files from the current directory
 app.use(express.static(__dirname));
 
-// Route for the main page
+// Main route serving rideLogger.html
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'datalogger.html'));
+    res.sendFile(path.join(__dirname, 'rideLogger.html'));
 });
 
-// Handle 404 errors
+// Default route for 404
 app.use((req, res) => {
-    res.status(404).sendFile(path.join(__dirname, 'datalogger.html'));
+    res.status(404).sendFile(path.join(__dirname, 'rideLogger.html'));
 });
 
 const PORT = process.env.PORT || 3000;
